@@ -1,6 +1,6 @@
 Body{
   font-family: Arial;
-  background: color #f0f2f5;
+  background: color #989898;
   padding: 40px;
   display: flex;
   justify-content:center;
@@ -10,19 +10,20 @@ Body{
 
 }
 .app-container{
-  background: rgb(125, 125, 125);
+  background: rgb(135, 135, 135);
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgb(17, 255, 0);
   width: 100%;
   max-width: 400px;
   text-align: center;
 }
 h1{
   margin-bottom: 20px;
-  color: #333;
+  color: #282828;
   margin-top: 0;
   font-size: 2em;
+  text-align: center;
 
 }
 .input-container{
@@ -30,10 +31,23 @@ h1{
   gap: 10px;
   margin-bottom: 20px;
 }
+.input-container input[type="text"]::placeholder{
+  flex-grow: 1;
+  color: #de0000;
+  padding: 10px 15px;
+  font-size: 16px;
+  border-radius: 4px;
+  border: 1px solid #ca0000;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s ease-in-out;
+  
+} 
+
 input[type="text"]{
   flex: 1;
   padding: 10px;
-  border: 1px solid #070707;
+  border: 1px solid #ff0000;
   border-radius: 4px;
   font-size: 16px;
 }
@@ -41,11 +55,12 @@ button{
   padding: 10px 15px;
   border: none;
   background-color: #28a745;
-  color: white;
+  color: rgb(197, 0, 0);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 10px;
   transition: background-color 0.3s;
 }
 button:hover{
-  background-color: #218838;          
+  background-color: #218838;
+}
