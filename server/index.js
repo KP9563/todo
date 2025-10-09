@@ -1,3 +1,4 @@
+
 // server/index.js
 import express from "express";
 import cors from "cors";
@@ -8,7 +9,7 @@ import path from "path";
 // ------------------ 🔹 Firebase Setup ------------------
 console.log("🟢 Starting backend initialization...");
 
-const serviceAccountPath = path.resolve("todo-app-8a51d-firebase-adminsdk-fbsvc-3aa5637f47.json");
+const serviceAccountPath = path.resolve("todo-app-8a51d-firebase-adminsdk-fbsvc-249703c6d3.json");
 console.log("🔹 Resolving Firebase JSON path:", serviceAccountPath);
 
 let serviceAccount;
@@ -96,3 +97,4 @@ app.post("/todos", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Backend running with Firebase at http://localhost:${PORT}`);
 });
+

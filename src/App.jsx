@@ -4,6 +4,24 @@ import "./App.css";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 
+const FILTER_GROUPS = {
+  Status: ["all", "active", "completed"],
+  Tags: ["Work", "Personal", "Shopping"],
+  Priority: ["high", "medium", "low"],
+};
+
+const PRIORITY_CLASSES = {
+  high: "priority-high",
+  medium: "priority-medium",
+  low: "priority-low",
+};
+
+const TAG_CLASSES = {
+  Work: "tag-work",
+  Personal: "tag-personal",
+  Shopping: "tag-shopping",
+};
+
 const App = () => {
   const [todo, setTodo] = useState("");
   const [todos, setTodos] = useState([]);
@@ -13,7 +31,7 @@ const App = () => {
   const [dueDate, setDueDate] = useState("");
   const reminderTimersRef = useRef({});
 
-  // Fetch todos from backend
+  // Fetch todos
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -28,35 +46,31 @@ const App = () => {
     fetchTodos();
   }, []);
 
-  // Save todos in localStorage
+  // Local storage
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
-  // Notification permission
+  // Notifications
   useEffect(() => {
     if (!("Notification" in window)) return;
     if (Notification.permission === "default") {
       Notification.requestPermission().then((perm) => {
-        if (perm === "granted") {
-          toast.success("Notifications enabled ✅");
-        } else if (perm === "denied") {
-          toast("Notifications denied. Enable in browser settings.");
-        }
+        if (perm === "granted") toast.success("Notifications enabled ✅");
       });
     }
   }, []);
 
-  // Task reminders
+  // Reminders
   useEffect(() => {
-    Object.values(reminderTimersRef.current).forEach((id) => clearTimeout(id));
+    Object.values(reminderTimersRef.current).forEach(clearTimeout);
     reminderTimersRef.current = {};
 
     todos.forEach((t) => {
       if (!t.dueDate || t.completed) return;
-
-      const due = new Date(t.dueDate).getTime();
-      const msUntilDue = due - Date.now();
+      const due = new Date(t.dueDate);
+      due.setHours(0, 0, 0, 0);
+      const msUntilDue = due.getTime() - Date.now();
 
       if (msUntilDue > 0) {
         const id = setTimeout(() => {
@@ -71,12 +85,27 @@ const App = () => {
     });
 
     return () => {
-      Object.values(reminderTimersRef.current).forEach((id) => clearTimeout(id));
+      Object.values(reminderTimersRef.current).forEach(clearTimeout);
       reminderTimersRef.current = {};
     };
   }, [todos]);
 
-  // Add new task
+  // Helpers
+  const resetForm = () => {
+    setTodo("");
+    setPriority("medium");
+    setTag("Work");
+    setDueDate("");
+  };
+
+  const isOverdue = (task) => {
+    if (!task.dueDate || task.completed) return false;
+    const due = new Date(task.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due.getTime() < Date.now();
+  };
+
+  // Add task
   const addTask = async () => {
     if (todo.trim() === "") {
       toast.error("Task cannot be empty");
@@ -87,7 +116,7 @@ const App = () => {
       text: todo.trim(),
       priority,
       tag,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      dueDate: dueDate ? new Date(dueDate).toISOString().split("T")[0] : null,
     };
 
     try {
@@ -100,11 +129,7 @@ const App = () => {
       const savedTask = await res.json();
       setTodos([...todos, savedTask]);
       toast.success("Task added ✅");
-
-      setTodo("");
-      setPriority("medium");
-      setTag("Work");
-      setDueDate("");
+      resetForm();
     } catch (err) {
       console.error("Failed to save todo:", err);
       toast.error("Could not save todo 🚨");
@@ -123,7 +148,7 @@ const App = () => {
     toast("🗑️ Task deleted");
   };
 
-  // Filters
+  // Dynamic filtering
   const filteredTodos = todos.filter((t) => {
     if (filter === "active") return !t.completed;
     if (filter === "completed") return t.completed;
@@ -136,54 +161,82 @@ const App = () => {
     (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
   );
 
-  // Check overdue
-  const isOverdue = (task) => {
-    if (!task.dueDate || task.completed) return false;
-    return new Date(task.dueDate).getTime() < Date.now();
-  };
-
   return (
     <div className="app-container">
       <h1>My Tasks</h1>
       <Toaster position="top-right" reverseOrder={false} />
 
       {/* Input Section */}
-      <div className="input-container">
-        <input
-          type="text"
-          value={todo}
-          placeholder="What needs to be done?"
-          onChange={(e) => setTodo(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
-        />
+      <div className="input-section">
+        <div className="input-top">
+          <input
+            type="text"
+            value={todo}
+            placeholder="✍️ Add a new task..."
+            onChange={(e) => setTodo(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+          />
+          <button className="add-btn" onClick={addTask}>
+            ➕ Add Task
+          </button>
+        </div>
 
-        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-          <option value="high">🔴 High</option>
-          <option value="medium">🟡 Medium</option>
-          <option value="low">🟢 Low</option>
-        </select>
+        <div className="input-options">
+          <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+            {FILTER_GROUPS.Priority.map((p) => (
+              <option key={p} value={p}>
+                {p === "high" ? "🔴 High" : p === "medium" ? "🟡 Medium" : "🟢 Low"}
+              </option>
+            ))}
+          </select>
 
-        <select value={tag} onChange={(e) => setTag(e.target.value)}>
-          <option value="Work">Work</option>
-          <option value="Personal">Personal</option>
-          <option value="Shopping">Shopping</option>
-        </select>
+          <select value={tag} onChange={(e) => setTag(e.target.value)}>
+            {FILTER_GROUPS.Tags.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
 
-        <input
-          type="datetime-local"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          title="Due date (optional)"
-        />
-
-        <button onClick={addTask}>Add</button>
+          {/* Due date options */}
+          <div className="due-date-options">
+            <button
+              type="button"
+              onClick={() => setDueDate(new Date().toISOString().split("T")[0])}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                setDueDate(tomorrow.toISOString().split("T")[0]);
+              }}
+            >
+              Tomorrow
+            </button>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              title="Pick a date"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Dynamic Filters */}
       <div className="filter-container">
-        <button onClick={() => setFilter("all")}>All</button>
-        <button onClick={() => setFilter("active")}>Active</button>
-        <button onClick={() => setFilter("completed")}>Completed</button>
+        {Object.values(FILTER_GROUPS).flat().map((f) => (
+          <button
+            key={f}
+            className={filter === f ? "active-filter" : ""}
+            onClick={() => setFilter(f)}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
       </div>
 
       {/* Task List */}
@@ -191,12 +244,8 @@ const App = () => {
         <AnimatePresence>
           {sortedTodos.map((task) => {
             const overdue = isOverdue(task);
-            const priorityClass =
-              task.priority === "high"
-                ? "priority-high"
-                : task.priority === "medium"
-                ? "priority-medium"
-                : "priority-low";
+            const priorityClass = PRIORITY_CLASSES[task.priority];
+            const tagClass = TAG_CLASSES[task.tag];
 
             return (
               <motion.li
@@ -215,25 +264,17 @@ const App = () => {
                     checked={task.completed}
                     onChange={() => toggleTask(task.id)}
                   />
-                  <span className="task-text">{task.text}</span>
-
-                  <span
-                    className={`tag ${
-                      task.tag === "Work"
-                        ? "tag-work"
-                        : task.tag === "Personal"
-                        ? "tag-personal"
-                        : "tag-shopping"
-                    }`}
-                  >
-                    {task.tag}
-                  </span>
-
-                  {task.dueDate && (
-                    <small className={`task-date ${overdue ? "overdue-date" : ""}`}>
-                      {new Date(task.dueDate).toLocaleString()}
-                    </small>
-                  )}
+                  <div>
+                    <span className="task-text">{task.text}</span>
+                    <div>
+                      <span className={`tag ${tagClass}`}>{task.tag}</span>
+                      {task.dueDate && (
+                        <small className={`task-date ${overdue ? "overdue-date" : ""}`}>
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </small>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <button onClick={() => removeTask(task.id)} className="delete-btn">
